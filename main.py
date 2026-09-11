@@ -6,7 +6,47 @@ import chromadb
 from sentence_transformers import SentenceTransformer
 from openai import OpenAI
 import os
+from pydantic import BaseModel
+from typing import List, Dict, Any
 
+class DocumentImport(BaseModel):
+    id: str
+    text: str
+    embedding: List[float]
+    metadata: Dict[str, Any]
+
+@app.post("/import")
+async def import_documents(data: dict):
+    """Endpoint para importar documentos em lote"""
+    try:
+        documents = data.get("documents", [])
+        
+        if not documents:
+            return {"status": "error", "message": "Nenhum documento fornecido"}
+        
+        # Preparar dados para inserção
+        ids = [doc["id"] for doc in documents]
+        texts = [doc["text"] for doc in documents]
+        embeddings = [doc["embedding"] for doc in documents]
+        metadatas = [doc["metadata"] for doc in documents]
+        
+        # Adicionar à coleção
+        collection.add(
+            ids=ids,
+            documents=texts,
+            embeddings=embeddings,
+            metadatas=metadatas
+        )
+        
+        return {
+            "status": "success",
+            "imported": len(documents),
+            "total_in_db": collection.count()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao importar: {str(e)}")
+    
 app = FastAPI()
 security = HTTPBasic()
 
