@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import chromadb
 from sentence_transformers import SentenceTransformer
-import openai
+from openai import OpenAI
 import os
 
 app = FastAPI()
@@ -19,7 +19,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Usuários (ajuste as senhas!)
+# Usuários configurados
 USERS = {
     "admin": os.getenv("ADMIN_PASSWORD", "Wttw@9919910630"),
     "bruno.felix": os.getenv("USER_BRUNO_PASSWORD", "Wittel01"),
@@ -28,6 +28,9 @@ USERS = {
     "paulo.avelar": os.getenv("USER_PAULO_PASSWORD", "Wittel01"),
     "rogerio.fernandes": os.getenv("USER_ROGERIO_PASSWORD", "Wittel01"),
 }
+
+# Inicializa OpenAI (nova API)
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # Inicializa componentes
 print("📥 Carregando banco de dados...")
@@ -39,10 +42,10 @@ except:
     print("⚠️ Coleção não encontrada. Criando vazia...")
     collection = chroma_client.create_collection("verint_docs")
     print("✅ Coleção criada. Faça upload do banco.")
-embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
-print(f"✅ {collection.count()} documentos carregados!")
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
+print("🧠 Carregando modelo de embeddings...")
+embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
+print("✅ Modelo carregado!")
 
 class Question(BaseModel):
     question: str
@@ -67,13 +70,21 @@ async def ask(q: Question, username: str = Depends(verify_auth)):
         include=["documents", "metadatas", "distances"]
     )
     
+    # Se não houver resultados
+    if not results['documents'][0]:
+        return {
+            "answer": "Não encontrei informações relevantes nos documentos.",
+            "sources": [],
+            "confidence": "baixa"
+        }
+    
     # Monta contexto
     context = "\n\n".join([
         f"[{meta['filename']} - Pág {meta['page']}]\n{doc}"
         for doc, meta in zip(results['documents'][0], results['metadatas'][0])
     ])
     
-    # Chama OpenAI
+    # Chama OpenAI (NOVA API)
     prompt = f"""Baseado apenas nestes documentos, responda em {q.language}:
 
 {context}
@@ -82,20 +93,33 @@ Pergunta: {q.question}
 
 Resposta:"""
     
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.3
-    )
-    
-    return {
-        "answer": response.choices[0].message.content,
-        "sources": [
-            {
-                "filename": meta['filename'],
-                "page": meta['page'],
-                "relevance": round(1 - dist, 3)
-            }
-            for meta, dist in zip(results['metadatas'][0], results['distances'][0])
-        ]
-    }
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.3,
+            max_tokens=800
+        )
+        
+        answer = response.choices[0].message.content
+        
+        return {
+            "answer": answer,
+            "sources": [
+                {
+                    "filename": meta['filename'],
+                    "page": meta['page'],
+                    "relevance": round(1 - dist, 3)
+                }
+                for meta, dist in zip(results['metadatas'][0], results['distances'][0])
+            ],
+            "confidence": "alta"
+        }
+        
+    except Exception as e:
+        print(f"Erro OpenAI: {e}")
+        return {
+            "answer": f"Erro ao gerar resposta: {str(e)}",
+            "sources": [],
+            "confidence": "erro"
+        }
