@@ -32,7 +32,13 @@ USERS = {
 # Inicializa componentes
 print("📥 Carregando banco de dados...")
 chroma_client = chromadb.PersistentClient(path="./chroma_db")
-collection = chroma_client.get_collection("verint_docs")
+try:
+    collection = chroma_client.get_collection("verint_docs")
+    print(f"✅ {collection.count()} documentos carregados!")
+except:
+    print("⚠️ Coleção não encontrada. Criando vazia...")
+    collection = chroma_client.create_collection("verint_docs")
+    print("✅ Coleção criada. Faça upload do banco.")
 embedder = SentenceTransformer('paraphrase-multilingual-MiniLM-L12-v2')
 print(f"✅ {collection.count()} documentos carregados!")
 
