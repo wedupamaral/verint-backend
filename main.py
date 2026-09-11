@@ -21,17 +21,12 @@ app.add_middleware(
 
 # Usuários (ajuste as senhas!)
 USERS = {
-    "admin": os.getenv("ADMIN_PASSWORD", "admin123"),
-    "user1": os.getenv("USER1_PASSWORD", "verint2024"),
-    "user2": os.getenv("USER2_PASSWORD", "verint2024"),
-    "user3": os.getenv("USER3_PASSWORD", "verint2024"),
-    "user4": os.getenv("USER4_PASSWORD", "verint2024"),
-    "user5": os.getenv("USER5_PASSWORD", "verint2024"),
-    "user6": os.getenv("USER6_PASSWORD", "verint2024"),
-    "user7": os.getenv("USER7_PASSWORD", "verint2024"),
-    "user8": os.getenv("USER8_PASSWORD", "verint2024"),
-    "user9": os.getenv("USER9_PASSWORD", "verint2024"),
-    "user10": os.getenv("USER10_PASSWORD", "verint2024"),
+    "admin": os.getenv("ADMIN_PASSWORD", "Wttw@9919910630"),
+    "bruno.felix": os.getenv("USER_BRUNO_PASSWORD", "Wittel01"),
+    "adelson.ferreira": os.getenv("USER_ADELSON_PASSWORD", "Wittel01"),
+    "joselino.junior": os.getenv("USER_JOSELINO_PASSWORD", "Wittel01"),
+    "paulo.avelar": os.getenv("USER_PAULO_PASSWORD", "Wittel01"),
+    "rogerio.fernandes": os.getenv("USER_ROGERIO_PASSWORD", "Wittel01"),
 }
 
 # Inicializa componentes
