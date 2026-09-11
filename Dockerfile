@@ -1,18 +1,10 @@
-FROM python:3.11-slim
+FROM python:3.11
 
 WORKDIR /app
 
-# Instala dependências do sistema (com retry)
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copia requirements e instala
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copia o banco de dados e código
 COPY chroma_db/ ./chroma_db/
 COPY main.py .
 
